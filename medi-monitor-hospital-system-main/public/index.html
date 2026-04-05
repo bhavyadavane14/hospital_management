@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMonitor | Modern Hospital Monitoring</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="glass">
+        <div class="logo">
+            <img src="images/logo.png" alt="MediMonitor Logo">
+            <span>MediMonitor</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="/login.html" class="btn btn-primary">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Digital Healthcare, <br><span style="color: var(--primary-color);">Real-Time Care.</span></h1>
+                <p>Welcome to MediMonitor, the futuristic hospital monitoring platform. We provide doctors and nurses with real-time patient vitals, automated emergency detection, and seamless bed management.</p>
+                <div style="margin-top: 2rem;">
+                    <a href="/login.html" class="btn btn-primary">Get Started</a>
+                    <a href="#features" class="btn" style="color: var(--primary-color);">Learn More</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="images/hero.png" alt="Doctor Monitoring Dashboard">
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="feature-card glass">
+                <i class="fas fa-file-medical"></i>
+                <h3>Digital Records</h3>
+                <p>Securely manage patient information and clinical history in one unified digital platform.</p>
+            </div>
+            <div class="feature-card glass">
+                <i class="fas fa-heartbeat"></i>
+                <h3>Real-Time Alerts</h3>
+                <p>Instant notifications for critical changes in patient vitals powered by Socket.io technology.</p>
+            </div>
+            <div class="feature-card glass">
+                <i class="fas fa-bed"></i>
+                <h3>Bed Management</h3>
+                <p>Efficiently track and allocate hospital resources with our greedy optimization algorithm.</p>
+            </div>
+            <div class="feature-card glass">
+                <i class="fas fa-microscope"></i>
+                <h3>Remote Monitoring</h3>
+                <p>Doctors can supervise patients from anywhere with live dashboard integration.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MediMonitor Systems. All rights reserved.</p>
+        <p>Contact: emergency@medimonitor.com | +1 (555) HEALTH</p>
+    </footer>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard | MediMonitor</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar glass" id="sidebar">
+            <div class="logo">
+                <img src="images/logo.png" alt="Logo">
+                <span>MediMonitor</span>
+            </div>
+            <nav style="margin-top: 2rem;">
+                <ul style="flex-direction: column;">
+                    <li><a href="#" class="active"><i class="fas fa-user-md"></i> My Patients</a></li>
+                    <li><a href="#" id="history-hamburger"><i class="fas fa-history"></i> Discharge History</a></li>
+                    <li><a href="#" id="logout-btn" style="cursor: pointer;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="glass" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <button id="menu-toggle" class="btn" style="display: none; font-size: 1.5rem;"><i class="fas fa-bars"></i></button>
+                <h2>Doctor Dashboard - <span id="doctor-name">Loading...</span></h2>
+            </header>
+
+            <div class="glass" style="padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Assigned Patients (Specialization View)</h3>
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--secondary-color);">*Critical cases highlighted in RED</span>
+                    </div>
+                </div>
+                <table id="doctor-patient-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Bed Location</th>
+                            <th>Severity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Alert Popup (OS: Interrupt Handling) -->
+    <div id="alert-popup" class="alarm-active">
+        <h1 style="color: var(--danger-color); font-size: 3rem;">🚨 EMERGENCY 🚨</h1>
+        <h2 style="margin: 1rem 0;"><span id="alert-patient-name">Patient Name</span></h2>
+        <p id="alert-message" style="font-size: 1.2rem; margin-bottom: 2rem;">Critical vitals detected!</p>
+        <button onclick="dismissAlert()" class="btn btn-primary" style="background: var(--danger-color); padding: 1.5rem 3rem; font-size: 1.5rem;">DISMISS ALERT</button>
+    </div>
+
+    <!-- Audio for Alarm -->
+    <audio id="alarm-sound" loop src="https://assets.mixkit.co/sfx/preview/mixkit-emergency-alert-alarm-1007.mp3"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
