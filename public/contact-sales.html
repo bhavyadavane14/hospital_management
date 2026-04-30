@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Sales | MediMonitor</title>
+    <meta name="description" content="Get in touch with the MediMonitor sales team to discuss how our platform can fit your hospital's needs.">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="background: url('images/room.jpg') no-repeat center center fixed; background-size: cover;">
+    <header class="glass">
+        <div class="logo">
+            <img src="images/logo.png" alt="MediMonitor Logo">
+            <span>MediMonitor</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/features.html">Features</a></li>
+                <li><a href="/why-us.html">Why Us</a></li>
+                <li><a href="/how-it-works.html">How It Works</a></li>
+                <li><a href="/login.html" class="btn btn-primary">Staff Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="page-hero glass" style="background: none; min-height: auto; padding: 3rem 5%;">
+            <span class="hero-badge"><i class="fas fa-envelope-open-text"></i> Contact Us</span>
+            <h1>Let's Talk About Your <span class="accent">Hospital's Needs</span></h1>
+            <p>Our team is ready to answer your questions and help you set up a custom deployment of MediMonitor for your facility.</p>
+        </section>
+
+        <section class="how-section" style="margin: 0; background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);">
+            <div class="glass" style="max-width: 600px; margin: 0 auto; padding: 3rem;">
+                <form id="contact-sales-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label for="name" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Full Name</label>
+                        <input type="text" id="name" required style="width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label for="hospital" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Hospital Name</label>
+                        <input type="text" id="hospital" required style="width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label for="email" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Work Email</label>
+                        <input type="email" id="email" required style="width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label for="message" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">How can we help?</label>
+                        <textarea id="message" rows="5" required style="width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px; resize: vertical;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem;">Send Message</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="logo" style="justify-content: flex-start; margin-bottom: 0.75rem;">
+                    <img src="images/logo.png" alt="MediMonitor Logo"><span>MediMonitor</span>
+                </div>
+                <p>The cloud-based patient monitoring platform trusted by hospitals nationwide.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Platform</h4>
+                <ul>
+                    <li><a href="/features.html">Features</a></li>
+                    <li><a href="/why-us.html">Why MediMonitor</a></li>
+                    <li><a href="/how-it-works.html">How It Works</a></li>
+                    <li><a href="/login.html">Staff Login</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>For Hospitals</h4>
+                <ul>
+                    <li><a href="/contact-sales.html">Contact Sales</a></li>
+                    <li><a href="/pricing.html">Pricing</a></li>
+                    <li><a href="/documentation.html">Documentation</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Contact</h4>
+                <ul>
+                    <li><i class="fas fa-envelope"></i> contact@medimonitor.com</li>
+                    <li><i class="fas fa-phone"></i> +1 (555) MEDI-MON</li>
+                    <li><i class="fas fa-headset"></i> 24/7 Support</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 MediMonitor Systems. All rights reserved.</p>
+        </div>
+    </footer>
+    <script>
+        document.getElementById('contact-sales-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Thank you! Our sales team will reach out to you within 24 hours.');
+            e.target.reset();
+        });
+    </script>
+</body>
+</html>
