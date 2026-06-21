@@ -48,6 +48,7 @@ const bedRoutes = require('./src/routes/beds');
 const alertRoutes = require('./src/routes/alerts');
 const checkupRoutes = require('./src/routes/checkups');
 const appointmentRoutes = require('./src/routes/appointments');
+const { router: chatbotRoutes, trainModelFromDb } = require('./src/routes/chatbot');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -56,6 +57,10 @@ app.use('/api/beds', bedRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/checkups', checkupRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/chatbot', chatbotRoutes);
+
+// Train the Chatbot Model on server startup
+trainModelFromDb();
 
 // Catch-all to serve index.html for unknown routes (optional if using SPA logic)
 app.get('/', (req, res) => {
