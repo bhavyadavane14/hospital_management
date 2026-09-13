@@ -157,8 +157,165 @@ function initDb() {
         )
     `).run();
 
-    // Seed initial data
+    // ── AGENT & CLINICAL EXTENSION TABLES ──────────────────────────────
+    try {
+        db.prepare(`ALTER TABLE patients ADD COLUMN workflow_status TEXT DEFAULT 'MONITORING'`).run();
+    } catch (e) {
+        // Column already exists
+    }
+
+    // Medications table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS medications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            drug_name TEXT NOT NULL,
+            dosage TEXT NOT NULL,
+            frequency TEXT,
+            route TEXT DEFAULT 'Oral',
+            status TEXT DEFAULT 'Active' CHECK(status IN ('Active', 'Discontinued', 'Held', 'Completed')),
+            start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id)
+        )
+    `).run();
+
+    // Allergies table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS allergies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            allergen TEXT NOT NULL,
+            reaction TEXT,
+            severity TEXT DEFAULT 'Moderate' CHECK(severity IN ('Mild', 'Moderate', 'Severe', 'Anaphylaxis')),
+            recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id)
+        )
+    `).run();
+
+    // Laboratory results table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS lab_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            test_name TEXT NOT NULL,
+            value TEXT NOT NULL,
+            numeric_val REAL,
+            unit TEXT,
+            reference_range TEXT,
+            flag TEXT DEFAULT 'NORMAL' CHECK(flag IN ('NORMAL', 'HIGH', 'LOW', 'CRITICAL_HIGH', 'CRITICAL_LOW')),
+            collected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id)
+        )
+    `).run();
+
+    // Hospital Resources table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS hospital_resources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            resource_type TEXT NOT NULL,
+            name TEXT NOT NULL,
+            ward TEXT,
+            status TEXT NOT NULL DEFAULT 'Available' CHECK(status IN ('Available', 'Occupied', 'Maintenance', 'Reserved')),
+            capacity INTEGER DEFAULT 1,
+            current_load INTEGER DEFAULT 0,
+            notes TEXT
+        )
+    `).run();
+
+    // Agent Runs table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_runs (
+            id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            patient_id INTEGER NOT NULL,
+            goal TEXT NOT NULL,
+            scenario_id TEXT,
+            current_state TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'running',
+            replan_count INTEGER DEFAULT 0,
+            verification_status TEXT DEFAULT 'pending',
+            human_review_required INTEGER DEFAULT 0,
+            human_review_reason TEXT,
+            final_outcome TEXT,
+            reviewer_notes TEXT,
+            started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            completed_at DATETIME,
+            FOREIGN KEY (patient_id) REFERENCES patients(id)
+        )
+    `).run();
+
+    // Agent States table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_states (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            state_json TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES agent_runs(id)
+        )
+    `).run();
+
+    // Agent Tool Calls table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_tool_calls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            tool_name TEXT NOT NULL,
+            input_payload TEXT,
+            output_payload TEXT,
+            success INTEGER NOT NULL,
+            duration_ms INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES agent_runs(id)
+        )
+    `).run();
+
+    // Agent Actions table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_actions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            action_type TEXT NOT NULL,
+            action_payload TEXT,
+            status TEXT NOT NULL,
+            failure_reason TEXT,
+            is_replanned INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES agent_runs(id)
+        )
+    `).run();
+
+    // Agent Verifications table
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_verifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            action_id INTEGER,
+            verified INTEGER NOT NULL,
+            details TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES agent_runs(id)
+        )
+    `).run();
+
+    // Agent Timeline logs
+    db.prepare(`
+        CREATE TABLE IF NOT EXISTS agent_timeline (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            step_index INTEGER NOT NULL,
+            icon TEXT,
+            title TEXT NOT NULL,
+            description TEXT,
+            badge TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES agent_runs(id)
+        )
+    `).run();
+
+    // Seed initial data & synthetic agent scenarios
     seedData();
+    seedAgentScenarios();
 }
 
 function seedData() {
@@ -299,6 +456,166 @@ function seedData() {
         for (const seed of chatbotSeeds) {
             stmt.run(seed.intent, seed.category, seed.response, seed.redirect_url, seed.training_phrases);
         }
+    }
+}
+
+function seedAgentScenarios() {
+    // 0. Ensure synthetic patients P102, P108, P115 exist before foreign keys
+    db.prepare(`
+        INSERT OR IGNORE INTO patients (id, name, age, gender, doctor_id, nurse_id, bed_id, severity, status, workflow_status)
+        VALUES (102, 'Robert Vance', 64, 'Male', 1, 1, 5, 'Warning', 'Active', 'MONITORING')
+    `).run();
+
+    // Ensure STANDALONE run exists for standalone tool testing
+    db.prepare(`
+        INSERT OR IGNORE INTO agent_runs (id, case_id, patient_id, goal, current_state, status)
+        VALUES ('STANDALONE', 'STANDALONE', 102, 'Standalone Tool Invocation', 'INITIALIZED', 'completed')
+    `).run();
+
+    // 1. Seed Hospital Resources if empty
+    const resourceCount = db.prepare('SELECT COUNT(*) as count FROM hospital_resources').get().count;
+    if (resourceCount === 0) {
+        const insertResource = db.prepare(`
+            INSERT INTO hospital_resources (resource_type, name, ward, status, capacity, current_load, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        // ICU Beds (Simulate primary emergency resource unavailability for scenario 1 replan)
+        insertResource.run('ICU Bed', 'ICU Bed 01', 'ICU', 'Occupied', 1, 1, 'Occupied - Severe acute respiratory distress case');
+        insertResource.run('ICU Bed', 'ICU Bed 02', 'ICU', 'Occupied', 1, 1, 'Occupied - Post-CABG stabilization');
+        // Alternative Step-down Telemetry Beds
+        insertResource.run('Step-Down Telemetry Bed', 'Step-Down Bed 01', 'Telemetry Unit', 'Occupied', 1, 1, 'Occupied - Arrhythmia monitoring');
+        insertResource.run('Step-Down Telemetry Bed', 'Step-Down Bed 02', 'Telemetry Unit', 'Available', 1, 0, 'Available - Continuous ECG & Pulse Oximetry Telemetry Ready');
+        // Rapid Response & Support Resources
+        insertResource.run('Rapid Response Team', 'RRT Unit Alpha', 'Hospital-Wide', 'Available', 1, 0, 'Available - Critical Care Nurse & RT on rapid dispatch standby');
+        insertResource.run('Emergency Crash Cart', 'Crash Cart #3', 'Ward A', 'Available', 1, 0, 'Available - Defibrillator & emergency airway kit inspected');
+        insertResource.run('Clinical Follow-up Clinic', 'Post-Op Follow-up Suite', 'Ambulatory Wing', 'Available', 10, 2, 'Available - Routine post-discharge clinical consultation');
+    } else {
+        // Ensure Step-Down Bed 02 is Available for replanning demos
+        db.prepare(`UPDATE hospital_resources SET status = 'Available' WHERE name = 'Step-Down Bed 02'`).run();
+        db.prepare(`UPDATE hospital_resources SET status = 'Occupied' WHERE name IN ('ICU Bed 01', 'ICU Bed 02')`).run();
+    }
+
+    // Patient 108: Sarah Jenkins (Scenario 2: Medication-Allergy Conflict -> Human Review)
+    db.prepare(`
+        INSERT OR IGNORE INTO patients (id, name, age, gender, doctor_id, nurse_id, bed_id, severity, status, workflow_status)
+        VALUES (108, 'Sarah Jenkins', 42, 'Female', 1, 1, 7, 'Warning', 'Active', 'MONITORING')
+    `).run();
+
+    // Patient 115: David Chen (Scenario 3: Standard Safety Follow-up & Verification)
+    db.prepare(`
+        INSERT OR IGNORE INTO patients (id, name, age, gender, doctor_id, nurse_id, bed_id, severity, status, workflow_status)
+        VALUES (115, 'David Chen', 58, 'Male', 1, 1, 8, 'Normal', 'Active', 'MONITORING')
+    `).run();
+
+    // 3. Seed Vitals for P102 (Deteriorating series to trigger trend detection)
+    const p102VitalsCount = db.prepare('SELECT COUNT(*) as count FROM vitals_logs WHERE patient_id = 102').get().count;
+    if (p102VitalsCount === 0) {
+        const insertVitals = db.prepare(`
+            INSERT INTO vitals_logs (patient_id, heart_rate, bp_systolic, bp_diastolic, temperature, oxygen_level, medicine_given, notes, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', ?))
+        `);
+        insertVitals.run(102, 110, 135, 85, 99.1, 96, 'Aspirin 81mg', 'Baseline post-observation reading', '-45 minutes');
+        insertVitals.run(102, 125, 120, 75, 99.8, 93, 'None', 'Patient reports onset of mild chest tightness', '-30 minutes');
+        insertVitals.run(102, 138, 105, 65, 100.4, 90, 'Supplemental O2 2L', 'Increasing diaphoresis and tachypnea', '-15 minutes');
+        insertVitals.run(102, 145, 88, 58, 101.2, 88, 'None', 'Marked tachycardia, hypotension, worsening hypoxia', '-2 minutes');
+    }
+
+    // 4. Seed Labs for P102
+    const p102LabsCount = db.prepare('SELECT COUNT(*) as count FROM lab_results WHERE patient_id = 102').get().count;
+    if (p102LabsCount === 0) {
+        const insertLab = db.prepare(`
+            INSERT INTO lab_results (patient_id, test_name, value, numeric_val, unit, reference_range, flag)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        insertLab.run(102, 'Troponin I', '0.48', 0.48, 'ng/mL', '< 0.04', 'CRITICAL_HIGH');
+        insertLab.run(102, 'Lactate', '2.9', 2.9, 'mmol/L', '0.5 - 2.0', 'HIGH');
+        insertLab.run(102, 'Serum Potassium', '3.8', 3.8, 'mmol/L', '3.5 - 5.0', 'NORMAL');
+        insertLab.run(102, 'Hemoglobin', '13.2', 13.2, 'g/dL', '13.0 - 17.0', 'NORMAL');
+    }
+
+    // 5. Seed Medications for P102
+    const p102MedCount = db.prepare('SELECT COUNT(*) as count FROM medications WHERE patient_id = 102').get().count;
+    if (p102MedCount === 0) {
+        const insertMed = db.prepare(`
+            INSERT INTO medications (patient_id, drug_name, dosage, frequency, route, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        insertMed.run(102, 'Aspirin', '81 mg', 'Once daily', 'Oral', 'Active');
+        insertMed.run(102, 'Metoprolol Tartrate', '25 mg', 'Twice daily', 'Oral', 'Active');
+    }
+
+    // 6. Seed Allergies for P102
+    const p102AllergyCount = db.prepare('SELECT COUNT(*) as count FROM allergies WHERE patient_id = 102').get().count;
+    if (p102AllergyCount === 0) {
+        db.prepare(`
+            INSERT INTO allergies (patient_id, allergen, reaction, severity)
+            VALUES (102, 'Sulfa Drugs', 'Cutaneous Erythema & Pruritus', 'Moderate')
+        `).run();
+    }
+
+    // 7. Seed P108 (Sarah Jenkins - Penicillin Allergy vs Ampicillin Order Conflict)
+    const p108AllergyCount = db.prepare('SELECT COUNT(*) as count FROM allergies WHERE patient_id = 108').get().count;
+    if (p108AllergyCount === 0) {
+        db.prepare(`
+            INSERT INTO allergies (patient_id, allergen, reaction, severity)
+            VALUES (108, 'Penicillin', 'Anaphylaxis / Laryngeal Edema & Bronchospasm', 'Anaphylaxis')
+        `).run();
+    }
+
+    const p108MedCount = db.prepare('SELECT COUNT(*) as count FROM medications WHERE patient_id = 108').get().count;
+    if (p108MedCount === 0) {
+        const insertMed = db.prepare(`
+            INSERT INTO medications (patient_id, drug_name, dosage, frequency, route, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+        insertMed.run(108, 'Ampicillin-Sulbactam (Unasyn)', '1.5 g', 'Every 6 hours', 'IV', 'Active');
+        insertMed.run(108, 'Acetaminophen', '650 mg', 'Every 6 hours PRN', 'Oral', 'Active');
+    }
+
+    const p108VitalsCount = db.prepare('SELECT COUNT(*) as count FROM vitals_logs WHERE patient_id = 108').get().count;
+    if (p108VitalsCount === 0) {
+        db.prepare(`
+            INSERT INTO vitals_logs (patient_id, heart_rate, bp_systolic, bp_diastolic, temperature, oxygen_level, medicine_given, notes)
+            VALUES (108, 98, 118, 74, 101.4, 94, 'Acetaminophen 650mg', 'Admitted with suspected lower respiratory tract infection')
+        `).run();
+    }
+
+    const p108LabsCount = db.prepare('SELECT COUNT(*) as count FROM lab_results WHERE patient_id = 108').get().count;
+    if (p108LabsCount === 0) {
+        db.prepare(`
+            INSERT INTO lab_results (patient_id, test_name, value, numeric_val, unit, reference_range, flag)
+            VALUES (108, 'WBC Count', '14.8', 14.8, '10^3/uL', '4.5 - 11.0', 'HIGH')
+        `).run();
+    }
+
+    // 8. Seed P115 (David Chen - Post-Op Stable Clinical Follow-up)
+    const p115VitalsCount = db.prepare('SELECT COUNT(*) as count FROM vitals_logs WHERE patient_id = 115').get().count;
+    if (p115VitalsCount === 0) {
+        db.prepare(`
+            INSERT INTO vitals_logs (patient_id, heart_rate, bp_systolic, bp_diastolic, temperature, oxygen_level, medicine_given, notes)
+            VALUES (115, 74, 120, 78, 98.4, 98, 'Enoxaparin 40mg', 'Post-operative Day 2 - Mobilizing well')
+        `).run();
+    }
+
+    const p115LabsCount = db.prepare('SELECT COUNT(*) as count FROM lab_results WHERE patient_id = 115').get().count;
+    if (p115LabsCount === 0) {
+        db.prepare(`
+            INSERT INTO lab_results (patient_id, test_name, value, numeric_val, unit, reference_range, flag)
+            VALUES (115, 'Hemoglobin', '13.8', 13.8, 'g/dL', '13.5 - 17.5', 'NORMAL')
+        `).run();
+        db.prepare(`
+            INSERT INTO lab_results (patient_id, test_name, value, numeric_val, unit, reference_range, flag)
+            VALUES (115, 'WBC Count', '6.5', 6.5, '10^3/uL', '4.5 - 11.0', 'NORMAL')
+        `).run();
+    }
+
+    const p115MedCount = db.prepare('SELECT COUNT(*) as count FROM medications WHERE patient_id = 115').get().count;
+    if (p115MedCount === 0) {
+        db.prepare(`
+            INSERT INTO medications (patient_id, drug_name, dosage, frequency, route, status)
+            VALUES (115, 'Enoxaparin', '40 mg', 'Once daily', 'Subcutaneous', 'Active')
+        `).run();
     }
 }
 

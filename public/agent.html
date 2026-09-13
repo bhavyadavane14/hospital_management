@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediMonitor Agent | Autonomous Hospital Safety & Follow-up</title>
+    <meta name="description" content="Autonomous Hospital Safety and Clinical Follow-up Agentic AI system with closed-loop execution, deterministic safety rules, failure replanning, and human escalation.">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="background: url('images/monitor2.jpg') no-repeat center center fixed; background-size: cover;">
+
+    <!-- ── GLOBAL NAVIGATION ───────────────────────────── -->
+    <header class="glass">
+        <div class="logo">
+            <img src="images/logo.png" alt="MediMonitor Logo">
+            <span>MediMonitor</span>
+        </div>
+        <nav>
+            <ul style="display: flex; align-items: center; gap: 1.25rem;">
+                <li><a href="#" id="staff-dashboard-link" style="font-weight: 600;"><i class="fas fa-th-large"></i> Staff Dashboard</a></li>
+                <li><a href="/agent.html" class="active" style="color: var(--primary-color); font-weight: 700;"><i class="fas fa-robot"></i> MediMonitor Agent</a></li>
+                <li>
+                    <span id="staff-user-badge" style="background: rgba(13,148,136,0.12); color: var(--primary-color); padding: 0.4rem 0.85rem; border-radius: 999px; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <i class="fas fa-user-circle"></i> <span id="staff-user-name">Staff</span>
+                    </span>
+                </li>
+                <li>
+                    <button id="logout-btn" class="btn" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 0.4rem 0.85rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- ── MAIN CONTENT CONTAINER ─────────────────────── -->
+    <main style="max-width: 1400px; margin: 2rem auto; padding: 0 1.5rem 4rem;">
+
+        <!-- Header Hero Card -->
+        <div class="glass" style="padding: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="font-size: 2rem;">🤖</span>
+                    <h1 style="font-size: 1.85rem; color: var(--dark-color); margin: 0;">
+                        MEDIMONITOR <span class="accent" style="color: var(--primary-color);">AGENT</span>
+                    </h1>
+                    <span class="agent-header-badge badge-running" id="agent-overall-badge">
+                        <span class="agent-dot-pulse dot-running" id="agent-pulse-dot"></span>
+                        <span id="agent-overall-status">READY</span>
+                    </span>
+                </div>
+                <p style="color: var(--secondary-color); font-size: 0.95rem; margin: 0; max-width: 780px;">
+                    Autonomous Hospital Safety & Clinical Follow-up System operating under closed-loop agentic workflow: 
+                    <strong>Goal &rarr; Observe &rarr; Assess &rarr; Plan &rarr; Tool Selection &rarr; Action &rarr; Failure & Replanning &rarr; Verification &rarr; Human Escalation</strong>.
+                </p>
+            </div>
+            <div style="text-align: right; background: rgba(255,255,255,0.7); padding: 0.85rem 1.25rem; border-radius: 10px; border: 1px solid rgba(13,148,136,0.3);">
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-color); font-weight: 600; display: block;">Clinical Safety Envelope</span>
+                <strong style="color: var(--primary-color); font-size: 0.9rem;"><i class="fas fa-shield-alt"></i> Deterministic Safety Rules Active</strong>
+            </div>
+        </div>
+
+        <!-- Predefined Scenario Quick Launcher -->
+        <div class="glass" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; color: var(--dark-color); margin: 0;">
+                    <i class="fas fa-vial" style="color: var(--primary-color);"></i> Predefined Hackathon Demo Scenarios
+                </h3>
+                <small style="color: var(--secondary-color);">Select a scenario to observe autonomous agent behavior</small>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
+                <button type="button" class="scenario-btn active" id="btn-scenario-1" onclick="selectScenario('scenario_1')">
+                    <strong><i class="fas fa-heartbeat" style="color: #ef4444;"></i> Scenario 1: Deterioration + Resource Failure Replan</strong>
+                    <small>Patient P102 (Robert Vance) &bull; Severe tachycardia & hypoxia trend &bull; Primary ICU Bed occupied &bull; Autonomous Replanning to Telemetry &bull; Action Verified</small>
+                </button>
+                <button type="button" class="scenario-btn" id="btn-scenario-2" onclick="selectScenario('scenario_2')">
+                    <strong><i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> Scenario 2: Medication-Allergy Conflict Escalation</strong>
+                    <small>Patient P108 (Sarah Jenkins) &bull; Penicillin Anaphylaxis allergy vs Ampicillin order &bull; Catches conflict &bull; Blocks change &bull; Escalates to Human Review</small>
+                </button>
+                <button type="button" class="scenario-btn" id="btn-scenario-3" onclick="selectScenario('scenario_3')">
+                    <strong><i class="fas fa-check-circle" style="color: #10b981;"></i> Scenario 3: Standard Safety Follow-up Protocol</strong>
+                    <small>Patient P115 (David Chen) &bull; Post-operative recovery monitoring &bull; Stable vitals &bull; Automated routine checkup scheduling &bull; Verified in clinical registry</small>
+                </button>
+            </div>
+        </div>
+
+        <!-- Case & Goal Configuration Bar -->
+        <div class="glass" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
+            <form id="agent-run-form" style="display: grid; grid-template-columns: 240px 1fr auto; gap: 1.25rem; align-items: flex-end;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.4rem;">
+                        Patient / Case Selection:
+                    </label>
+                    <select id="patient-select" class="glass" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(13,148,136,0.4); border-radius: 8px; font-weight: 600;">
+                        <option value="102">P102 - Robert Vance (Age 64)</option>
+                        <option value="108">P108 - Sarah Jenkins (Age 42)</option>
+                        <option value="115">P115 - David Chen (Age 58)</option>
+                        <option value="1">P001 - Neej (Assigned Bed)</option>
+                        <option value="2">P002 - Ayush (Assigned Bed)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.4rem;">
+                        Agent Goal:
+                    </label>
+                    <input type="text" id="goal-input" value="Process patient case safely under clinical workflow protocol" class="glass" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(13,148,136,0.4); border-radius: 8px;" required>
+                </div>
+                <div>
+                    <button type="submit" id="run-agent-btn" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; height: 46px;">
+                        <i class="fas fa-play"></i> <span>RUN AGENT</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── AGENT STATUS BAR ───────────────────────────── -->
+        <div class="glass" style="padding: 1.25rem 2rem; margin-bottom: 2rem; display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr; gap: 1.5rem; align-items: center;">
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-color); font-weight: 600; display: block;">Current State</span>
+                <strong id="state-display" style="color: var(--primary-color); font-size: 1.05rem;">IDLE</strong>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-color); font-weight: 600; display: block;">Active Goal</span>
+                <span id="active-goal-display" style="font-size: 0.9rem; color: var(--dark-color); font-weight: 500;">Ready for execution</span>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-color); font-weight: 600; display: block;">Replanning Count</span>
+                <strong id="replan-count-display" style="font-size: 1.1rem; color: #f59e0b;">0</strong>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--secondary-color); font-weight: 600; display: block;">Verification Status</span>
+                <strong id="verification-display" style="font-size: 1.05rem; color: #10b981;">Pending</strong>
+            </div>
+        </div>
+
+        <!-- ── HUMAN REVIEW ESCALATION BOX (Hidden until triggered) ── -->
+        <div id="human-review-container" class="human-review-box" style="display: none; margin-bottom: 2rem;">
+            <h3><i class="fas fa-exclamation-triangle"></i> 🚨 HUMAN REVIEW REQUIRED</h3>
+            <p style="font-size: 0.95rem; color: #7f1d1d; margin-bottom: 1rem;">
+                <strong>Reason:</strong> <span id="human-review-reason-text">Consequential drug-allergy conflict detected. Autonomous medication adjustment is strictly prohibited.</span>
+            </p>
+            <div id="human-review-evidence-list">
+                <!-- Populated dynamically -->
+            </div>
+            <div style="background: rgba(255,255,255,0.7); padding: 1rem; border-radius: 8px; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <strong style="color: #991b1b; font-size: 0.9rem;">Agent Action:</strong>
+                    <span style="font-size: 0.85rem; color: #475569;">No autonomous clinical prescription change made. Notification delivered to attending team.</span>
+                </div>
+                <button type="button" onclick="openReviewModal()" class="btn btn-primary" style="background: #b91c1c; border-color: #991b1b; padding: 0.6rem 1.5rem;">
+                    <i class="fas fa-user-md"></i> REVIEW CASE & SIGN-OFF
+                </button>
+            </div>
+        </div>
+
+        <!-- ── TWO-COLUMN LIVE WORKFLOW GRID ──────────────── -->
+        <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 2rem; margin-bottom: 2.5rem;">
+
+            <!-- Left Column: Agent Activity (Observability Timeline) -->
+            <div class="glass" style="padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.15rem; color: var(--dark-color); margin: 0;">
+                        <i class="fas fa-stream" style="color: var(--primary-color);"></i> AGENT ACTIVITY (Observability Timeline)
+                    </h3>
+                    <span id="timeline-step-count" style="font-size: 0.8rem; background: rgba(13,148,136,0.1); color: var(--primary-color); padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600;">
+                        0 Steps
+                    </span>
+                </div>
+
+                <div class="timeline-container" id="timeline-feed">
+                    <div class="timeline-item" style="border-left: 4px solid var(--primary-color);">
+                        <div class="timeline-icon">🎯</div>
+                        <div class="timeline-title">
+                            <span>Ready to Initialize</span>
+                            <small style="color: var(--secondary-color);">Idle</small>
+                        </div>
+                        <div class="timeline-desc">
+                            Select a scenario or patient above and click <strong>RUN AGENT</strong> to start the closed-loop autonomous hospital safety workflow.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Tools Used & Agent State -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+
+                <!-- Controlled Tool Layer Activity -->
+                <div class="glass" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <h3 style="font-size: 1.1rem; color: var(--dark-color); margin: 0;">
+                            <i class="fas fa-tools" style="color: var(--primary-color);"></i> CONTROLLED TOOL CALLS
+                        </h3>
+                        <small style="color: var(--secondary-color);">8 Safe Interfaces</small>
+                    </div>
+
+                    <div class="tools-grid">
+                        <div class="tool-card" id="tool-card-patient">
+                            <div class="tool-info">
+                                <h4>Patient Record Tool</h4>
+                                <span id="tool-sub-patient">get_patient()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-patient">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-vitals">
+                            <div class="tool-info">
+                                <h4>Vitals Tool</h4>
+                                <span id="tool-sub-vitals">get_patient_vitals()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-vitals">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-medications">
+                            <div class="tool-info">
+                                <h4>Medication Tool</h4>
+                                <span id="tool-sub-medications">get_medications()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-medications">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-allergies">
+                            <div class="tool-info">
+                                <h4>Allergy Tool</h4>
+                                <span id="tool-sub-allergies">get_allergies()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-allergies">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-labs">
+                            <div class="tool-info">
+                                <h4>Laboratory Tool</h4>
+                                <span id="tool-sub-labs">get_patient_labs()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-labs">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-resources">
+                            <div class="tool-info">
+                                <h4>Hospital Resource Tool</h4>
+                                <span id="tool-sub-resources">get_resources()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-resources">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-actions">
+                            <div class="tool-info">
+                                <h4>Workflow Action Tool</h4>
+                                <span id="tool-sub-actions">execute_action()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-actions">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+
+                        <div class="tool-card" id="tool-card-verification">
+                            <div class="tool-info">
+                                <h4>Verification Tool</h4>
+                                <span id="tool-sub-verification">verify_action()</span>
+                            </div>
+                            <div class="tool-status-icon tool-idle" id="tool-icon-verification">
+                                <i class="fas fa-circle-notch"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent State Memory -->
+                <div class="glass" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.1rem; color: var(--dark-color); margin: 0;">
+                            <i class="fas fa-brain" style="color: var(--primary-color);"></i> AGENT MEMORY & STATE
+                        </h3>
+                        <span id="case-id-badge" style="font-size: 0.8rem; color: var(--secondary-color); font-weight: 600;">
+                            No active case
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="font-size: 0.85rem; color: var(--secondary-color); text-transform: uppercase;">Observations:</strong>
+                        <ul id="state-observations-list" style="margin-top: 0.4rem; padding-left: 1.25rem; font-size: 0.88rem; color: var(--dark-color); display: flex; flex-direction: column; gap: 0.4rem;">
+                            <li>Awaiting execution start...</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <strong style="font-size: 0.85rem; color: var(--secondary-color); text-transform: uppercase;">Workflow Actions Taken:</strong>
+                        <ul id="state-actions-list" style="margin-top: 0.4rem; padding-left: 1.25rem; font-size: 0.88rem; color: var(--dark-color); display: flex; flex-direction: column; gap: 0.4rem;">
+                            <li>None</li>
+                        </ul>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.7); padding: 0.85rem 1.25rem; border-radius: 8px;">
+                        <span style="font-size: 0.9rem; font-weight: 600; color: var(--dark-color);">Final Outcome:</span>
+                        <strong id="final-outcome-badge" style="font-size: 0.9rem; color: var(--primary-color);">Pending Run</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── AGENT RUN HISTORY ──────────────────────────── -->
+        <div class="glass" style="padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <h3 style="font-size: 1.2rem; color: var(--dark-color); margin: 0;">
+                        <i class="fas fa-history" style="color: var(--primary-color);"></i> AGENT RUN HISTORY & AUDIT TRAIL
+                    </h3>
+                    <small style="color: var(--secondary-color);">Click any previous run to rehydrate its timeline and verification data</small>
+                </div>
+                <button type="button" onclick="loadRunHistory()" class="btn" style="background: rgba(255,255,255,0.8); border: 1px solid rgba(13,148,136,0.3); font-size: 0.85rem;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table id="runs-history-table">
+                    <thead>
+                        <tr>
+                            <th>Case ID</th>
+                            <th>Patient</th>
+                            <th>Goal</th>
+                            <th>Date / Time</th>
+                            <th>Status</th>
+                            <th>Replans</th>
+                            <th>Verification</th>
+                            <th>Review</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="runs-history-tbody">
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: var(--secondary-color); padding: 2rem;">Loading previous runs...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── HUMAN REVIEW MODAL ─────────────────────────── -->
+    <div id="review-modal" class="agent-modal-overlay" style="display: none;">
+        <div class="agent-modal-content">
+            <h2 style="color: #b91c1c; display: flex; align-items: center; gap: 0.6rem; font-size: 1.4rem; margin-bottom: 1rem;">
+                <i class="fas fa-user-md"></i> Clinical Safety Sign-Off
+            </h2>
+            <p style="color: #475569; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                The MediMonitor Agent detected consequential clinical uncertainty (drug-allergy cross-reactivity). 
+                Autonomous medication orders were halted. Please review the recorded evidence below and provide clinical acknowledgment.
+            </p>
+
+            <div id="modal-evidence-box" style="margin-bottom: 1.5rem;"></div>
+
+            <form id="human-acknowledge-form">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.4rem;">
+                        Attending Staff Name:
+                    </label>
+                    <input type="text" id="reviewer-name-input" value="Dr. Strange (Cardiology)" class="glass" style="width: 100%; padding: 0.75rem;" required>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.4rem;">
+                        Reviewer Clinical Notes:
+                    </label>
+                    <textarea id="reviewer-notes-input" rows="3" class="glass" style="width: 100%; padding: 0.75rem;" required>Confirmed Penicillin allergy. Discontinued Ampicillin-Sulbactam order and substituted Levofloxacin per culture sensitivities.</textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" onclick="closeReviewModal()" class="btn" style="background: #e2e8f0;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: #10b981; border-color: #059669;">
+                        <i class="fas fa-check"></i> Sign-Off & Return to Monitoring
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── TOOL CALL DETAILS MODAL ────────────────────── -->
+    <div id="tool-inspect-modal" class="agent-modal-overlay" style="display: none;">
+        <div class="agent-modal-content">
+            <h3 id="inspect-tool-title" style="color: var(--dark-color); margin-bottom: 1rem;">Tool Call Details</h3>
+            <div style="margin-bottom: 1rem;">
+                <strong style="font-size: 0.85rem; color: var(--secondary-color);">Input Payload:</strong>
+                <pre id="inspect-input-payload" style="background: #0f172a; color: #38bdf8; padding: 1rem; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; margin-top: 0.3rem;"></pre>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <strong style="font-size: 0.85rem; color: var(--secondary-color);">Output Result:</strong>
+                <pre id="inspect-output-payload" style="background: #0f172a; color: #4ade80; padding: 1rem; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; margin-top: 0.3rem;"></pre>
+            </div>
+            <div style="text-align: right;">
+                <button type="button" onclick="document.getElementById('tool-inspect-modal').style.display = 'none'" class="btn btn-primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/agent.js"></script>
+</body>
+</html>

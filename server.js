@@ -15,13 +15,22 @@ const io = socketIo(server);
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
     secret: 'medimonitor-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false } // Set to true if using HTTPS
 }));
+
+// Staff Authentication Guard for Agent Control Panel (Server-Side Protection)
+app.get(['/agent.html', '/agent'], (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.redirect('/login.html');
+    }
+    res.sendFile(path.join(__dirname, 'public', 'agent.html'));
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Socket.io connection logic
 io.on('connection', (socket) => {
@@ -49,6 +58,7 @@ const alertRoutes = require('./src/routes/alerts');
 const checkupRoutes = require('./src/routes/checkups');
 const appointmentRoutes = require('./src/routes/appointments');
 const { router: chatbotRoutes, trainModelFromDb } = require('./src/routes/chatbot');
+const agentRoutes = require('./src/routes/agent');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -58,6 +68,17 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/checkups', checkupRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/agent', agentRoutes);
+app.use('/api/followups', checkupRoutes);
+app.use('/api/resources', (req, res) => {
+    const { db } = require('./src/models/database');
+    try {
+        const resources = db.prepare('SELECT * FROM hospital_resources').all();
+        res.json(resources);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // Train the Chatbot Model on server startup
 trainModelFromDb();

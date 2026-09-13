@@ -182,31 +182,63 @@ router.post('/:id/alert', auth(['nurse']), (req, res) => {
     }
 });
 
-// Discharge Patient
-router.post('/:id/discharge', auth(['doctor', 'admin']), (req, res) => {
+// Discharge Patient (Supports both POST and PUT)
+const handleDischarge = (req, res) => {
     const patientId = req.params.id;
+    const io = req.app.get('io');
     
+    let patientData = null;
     const transaction = db.transaction(() => {
-        const patient = db.prepare('SELECT bed_id FROM patients WHERE id = ?').get(patientId);
+        const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
+        if (!patient) {
+            throw new Error('Patient not found');
+        }
+        patientData = patient;
         
-        // Update patient status
-        db.prepare(`UPDATE patients SET status = 'Discharged', bed_id = NULL WHERE id = ?`).run(patientId);
+        // Update patient status to Discharged
+        db.prepare(`
+            UPDATE patients 
+            SET status = 'Discharged', bed_id = NULL, severity = 'Normal', workflow_status = 'MONITORING' 
+            WHERE id = ?
+        `).run(patientId);
         
-        // Free up bed
+        // Free up bed in beds table
         if (patient.bed_id) {
             db.prepare(`UPDATE beds SET status = 'Available' WHERE id = ?`).run(patient.bed_id);
         }
 
-        db.prepare(`INSERT INTO patient_logs (patient_id, event) VALUES (?, ?)`).run(patientId, 'Patient discharged from hospital');
+        // Free up any allocated hospital resources
+        try {
+            db.prepare(`
+                UPDATE hospital_resources 
+                SET status = 'Available', current_load = 0 
+                WHERE status = 'Occupied' AND notes LIKE ?
+            `).run(`%${patientId}%`);
+        } catch (e) {
+            // hospital_resources table might not have matching notes
+        }
+
+        db.prepare(`INSERT INTO patient_logs (patient_id, event) VALUES (?, ?)`).run(
+            patientId,
+            `Patient discharged from hospital by ${req.session.name || req.session.role}`
+        );
     });
 
     try {
         transaction();
-        res.json({ message: 'Patient discharged successfully' });
+
+        // Real-time broadcast if socket.io is available
+        if (io) {
+            io.emit('patientDischarged', { patientId, patientName: patientData ? patientData.name : '' });
+        }
+
+        res.json({ message: 'Patient discharged successfully', patientId });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(error.message === 'Patient not found' ? 404 : 500).json({ error: error.message });
     }
-});
+};
+router.post('/:id/discharge', auth(['doctor', 'admin', 'nurse']), handleDischarge);
+router.put('/:id/discharge', auth(['doctor', 'admin', 'nurse']), handleDischarge);
 
 // Get patient details and timeline (AOA: Analysis of history)
 router.get('/:id', auth(), (req, res) => {
@@ -232,4 +264,45 @@ router.get('/:id', auth(), (req, res) => {
     }
 });
 
+// GET /api/patients/:id/vitals
+router.get('/:id/vitals', (req, res) => {
+    try {
+        const vitals = db.prepare('SELECT * FROM vitals_logs WHERE patient_id = ? ORDER BY timestamp DESC').all(req.params.id);
+        res.json(vitals);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/patients/:id/medications
+router.get('/:id/medications', (req, res) => {
+    try {
+        const medications = db.prepare('SELECT * FROM medications WHERE patient_id = ? ORDER BY start_date DESC').all(req.params.id);
+        res.json(medications);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/patients/:id/allergies
+router.get('/:id/allergies', (req, res) => {
+    try {
+        const allergies = db.prepare('SELECT * FROM allergies WHERE patient_id = ? ORDER BY recorded_at DESC').all(req.params.id);
+        res.json(allergies);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET /api/patients/:id/labs
+router.get('/:id/labs', (req, res) => {
+    try {
+        const labs = db.prepare('SELECT * FROM lab_results WHERE patient_id = ? ORDER BY collected_at DESC').all(req.params.id);
+        res.json(labs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
+

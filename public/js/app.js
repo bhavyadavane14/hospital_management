@@ -285,6 +285,7 @@ async function loadNursePatients(search = '', status = 'Active') {
                 ${!isPending ? `
                     <button class="btn btn-primary" onclick="openVitalsModal(${p.id}, '${p.name}')" style="padding: 5px 10px;">Vitals</button>
                     <button class="btn trigger-alert-btn" data-id="${p.id}" style="padding: 5px 10px; background: var(--danger-color); color: white;"><i class="fas fa-bell"></i> Alert</button>
+                    <button onclick="dischargePatient(${p.id})" class="btn" style="padding: 5px 10px; background: var(--success-color); color: white;">Discharge</button>
                 ` : '<em>In Transit...</em>'}
             </td>
         `;
@@ -321,11 +322,14 @@ async function initDoctorDashboard() {
     socket.on('emergencyAlert', (data) => {
         showEmergencyAlert(data);
     });
+
+    socket.on('patientDischarged', () => {
+        loadDoctorPatients();
+    });
 }
 
 async function loadDoctorPatients(search = '') {
-    // AOA: Fetching with Priority (Critical first)
-    const res = await fetch(`/api/patients?status=Active&search=${search}`);
+    const res = await fetch(`/api/patients?search=${search}&sort_by=severity`);
     const patients = await res.json();
     const tableBody = document.querySelector('#doctor-patient-table tbody');
     if (!tableBody) return;
@@ -351,14 +355,31 @@ async function loadDoctorPatients(search = '') {
 }
 
 async function dischargePatient(id) {
-    if (confirm("Are you sure you want to discharge this patient? This will free up their bed.")) {
-        const res = await fetch(`/api/patients/${id}/discharge`, { method: 'POST' });
+    if (!confirm("Are you sure you want to discharge this patient? This will free up their bed.")) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/patients/${id}/discharge`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
         if (res.ok) {
             alert('Patient discharged successfully.');
-            loadDoctorPatients();
+            if (typeof loadDoctorPatients === 'function') loadDoctorPatients();
+            if (typeof loadNursePatients === 'function') loadNursePatients();
+            if (typeof loadBedStats === 'function') loadBedStats();
+            if (typeof loadAdminStats === 'function') loadAdminStats();
+            if (typeof loadAdminPatients === 'function') loadAdminPatients();
+        } else {
+            alert('Failed to discharge patient: ' + (data.error || 'Server rejected discharge request'));
         }
+    } catch (err) {
+        console.error('Discharge error:', err);
+        alert('Error discharging patient: ' + err.message);
     }
 }
+window.dischargePatient = dischargePatient;
 
 function showEmergencyAlert(data) {
     const popup = document.getElementById('alert-popup');
@@ -633,7 +654,24 @@ async function loadAdminPatients(search = '') {
             <td>${p.status === 'Pending' ? 'Pending' : p.ward + ' - ' + p.bed_number}</td>
             <td><span class="severity-${p.severity.toLowerCase()}">${p.severity}</span></td>
             <td>${p.doctor_name ? 'Dr. ' + p.doctor_name : 'None'}</td>
+            <td>
+                ${p.status !== 'Discharged' ? `<button onclick="dischargePatient(${p.id})" class="btn" style="padding: 4px 8px; background: var(--success-color); color: white; font-size: 0.85rem;">Discharge</button>` : '<span style="color: #64748b; font-size: 0.85rem;">Discharged</span>'}
+            </td>
         `;
         tableBody.appendChild(tr);
     });
 }
+
+function initAdminDashboard() {
+    loadAdminStats();
+    loadBedList();
+    loadAdminPatients();
+
+    const searchInput = document.getElementById('admin-patient-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            loadAdminPatients(e.target.value);
+        });
+    }
+}
+
